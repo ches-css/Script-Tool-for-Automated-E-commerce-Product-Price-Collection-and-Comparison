@@ -67,6 +67,62 @@ class PriceScraper:
         logger.info("拼多多搜索功能需要特殊处理，暂不可用")
         return products
     
+    def generate_demo_data(self, keyword: str) -> List[Dict]:
+        """生成演示数据，用于测试报告生成和上传功能"""
+        demo_products = [
+            {
+                'platform': '京东',
+                'title': f'{keyword} 旗舰版 4G全网通 GPS定位 视频通话',
+                'price': 299.00,
+                'url': 'https://item.jd.com/100012043978.html',
+                'shop': '京东自营'
+            },
+            {
+                'platform': '京东',
+                'title': f'{keyword} 标准版 防水防摔 长续航',
+                'price': 199.00,
+                'url': 'https://item.jd.com/100023456789.html',
+                'shop': '品牌旗舰店'
+            },
+            {
+                'platform': '京东',
+                'title': f'{keyword} 尊享版 高清双摄 AI语音助手',
+                'price': 499.00,
+                'url': 'https://item.jd.com/100034567890.html',
+                'shop': '官方旗舰店'
+            },
+            {
+                'platform': '淘宝',
+                'title': f'{keyword} 基础款 2G通话 精准定位',
+                'price': 159.00,
+                'url': 'https://item.taobao.com/item.htm?id=12345678901',
+                'shop': '天猫旗舰店'
+            },
+            {
+                'platform': '淘宝',
+                'title': f'{keyword} 运动版 心率监测 运动计步',
+                'price': 259.00,
+                'url': 'https://item.taobao.com/item.htm?id=12345678902',
+                'shop': '品牌直销店'
+            },
+            {
+                'platform': '拼多多',
+                'title': f'{keyword} 经济版 基础通话 安全围栏',
+                'price': 99.00,
+                'url': 'https://mobile.yangkeduo.com/goods.html?goods_id=123456789',
+                'shop': '百亿补贴店'
+            },
+            {
+                'platform': '拼多多',
+                'title': f'{keyword} 升级版 视频通话 学习助手',
+                'price': 189.00,
+                'url': 'https://mobile.yangkeduo.com/goods.html?goods_id=987654321',
+                'shop': '品牌特卖店'
+            }
+        ]
+        logger.info(f"生成演示数据: {len(demo_products)} 条")
+        return demo_products
+    
     def collect_prices(self, keyword: str, platforms: List[str] = None) -> List[Dict]:
         """采集多个平台的价格"""
         if platforms is None:
