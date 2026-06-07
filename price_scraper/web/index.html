@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商商品价格采集与对比系统</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+    <div class="bg-decoration-2"></div>
+
+    <div class="container">
+        <header class="main-header">
+            <div class="logo">
+                <span class="logo-icon">◈</span>
+                <h1>PriceScout <span class="subtitle">电商价格采集与对比</span></h1>
+            </div>
+            <p class="tagline">多平台商品价格自动化采集 · 智能清洗去重 · 性价比智能推荐</p>
+        </header>
+
+        <!-- 搜索区域 -->
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="keywordInput" placeholder="输入商品关键词，如：iPhone 15、蓝牙耳机、笔记本电脑..." value="">
+                <div class="platform-select">
+                    <label><input type="checkbox" class="platform-check" value="jd" checked> 京东</label>
+                    <label><input type="checkbox" class="platform-check" value="tb" checked> 淘宝</label>
+                    <label><input type="checkbox" class="platform-check" value="pdd" checked> 拼多多</label>
+                </div>
+                <button id="searchBtn" class="btn-primary">
+                    <span class="btn-icon">🔍</span> 开始采集
+                </button>
+            </div>
+            <div class="search-options">
+                <label>每平台采集数量:
+                    <select id="limitSelect">
+                        <option value="5">5条</option>
+                        <option value="10" selected>10条</option>
+                        <option value="20">20条</option>
+                    </select>
+                </label>
+                <button id="demoBtn" class="btn-secondary">📊 加载演示数据</button>
+            </div>
+        </section>
+
+        <!-- 加载状态 -->
+        <div id="loadingState" class="loading-state hidden">
+            <div class="spinner"></div>
+            <p>正在多平台采集数据中，请稍候...</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <section id="statsSection" class="stats-section hidden">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">商品总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="statAvgPrice">¥0</div>
+                    <div class="stat-label">平均价格</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📉</div>
+                    <div class="stat-value" id="statMinPrice">¥0</div>
+                    <div class="stat-label">最低价格</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value" id="statBestValue">-</div>
+                    <div class="stat-label">最佳性价比</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 图表区域 -->
+        <section id="chartsSection" class="charts-section hidden">
+            <div class="charts-grid">
+                <div class="chart-panel">
+                    <h3 class="chart-title">📊 价格分布</h3>
+                    <div id="priceDistChart" class="chart"></div>
+                </div>
+                <div class="chart-panel">
+                    <h3 class="chart-title">🎯 平台对比雷达</h3>
+                    <div id="platformRadarChart" class="chart"></div>
+                </div>
+                <div class="chart-panel">
+                    <h3 class="chart-title">💎 性价比散点图</h3>
+                    <div id="scatterChart" class="chart"></div>
+                </div>
+                <div class="chart-panel">
+                    <h3 class="chart-title">🏷️ 价格排行</h3>
+                    <div id="rankChart" class="chart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 商品表格 -->
+        <section id="tableSection" class="table-section hidden">
+            <h3 class="section-title">📋 商品对比矩阵 <span class="sort-hint">（已按价格从低到高排序）</span></h3>
+            <div class="table-wrapper">
+                <table id="productTable">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>商品名称</th>
+                            <th>平台</th>
+                            <th>现价</th>
+                            <th>原价</th>
+                            <th>折扣</th>
+                            <th>销量</th>
+                            <th>评分</th>
+                            <th>性价比</th>
+                            <th>标签</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 示例数据展示 -->
+        <section id="exampleSection" class="example-section">
+            <h3 class="section-title">📖 数据示例与说明</h3>
+            <div class="example-grid">
+                <div class="example-card">
+                    <h4>🔍 输入示例</h4>
+                    <div class="code-block">
+<pre>关键词: 蓝牙耳机
+平台: 京东、淘宝、拼多多
+采集数量: 每平台 8 条</pre>
+                    </div>
+                </div>
+                <div class="example-card">
+                    <h4>📤 输出示例</h4>
+                    <div class="code-block">
+<pre>[{
+  "name": "Sony 蓝牙耳机 Pro5",
+  "price": 399.00,
+  "original_price": 599.00,
+  "sales": 12500,
+  "shop_rating": 4.8,
+  "platform": "jd",
+  "tags": ["高性价比", "热销"]
+}, ...]</pre>
+                    </div>
+                </div>
+                <div class="example-card">
+                    <h4>📊 可视化结果</h4>
+                    <ul class="feature-list">
+                        <li>✅ 价格分布柱状图 - 了解市场价格区间</li>
+                        <li>✅ 平台对比雷达图 - 多维度平台分析</li>
+                        <li>✅ 性价比散点图 - 价格与价值关系</li>
+                        <li>✅ 价格排行条形图 - 直观比价</li>
+                        <li>✅ 智能标签标注 - 高性价比/热销/高评分</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <footer class="main-footer">
+            <p>PriceScout © 2024 | 电商商品价格自动化采集与对比工具</p>
+            <p class="footer-note">支持平台：京东 · 淘宝 · 拼多多 | 数据仅供演示参考</p>
+        </footer>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

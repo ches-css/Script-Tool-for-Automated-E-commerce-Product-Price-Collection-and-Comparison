@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品价格采集报告 - 蓝牙耳机</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; color: #fff; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .stat-label { font-size: 0.9em; opacity: 0.7; }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #fff;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+        .chart { width: 100%; height: 350px; }
+        .table-container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            background: rgba(102, 126, 234, 0.2);
+            font-weight: 600;
+            color: #667eea;
+        }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 4px;
+        }
+        .tag-value { background: #4caf50; color: white; }
+        .tag-hot { background: #ff5722; color: white; }
+        .tag-rating { background: #2196f3; color: white; }
+        .tag-discount { background: #ff9800; color: white; }
+        .platform-jd { color: #e4393c; }
+        .platform-tb { color: #ff5000; }
+        .platform-pdd { color: #e02e24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>商品价格采集分析报告</h1>
+            <p>关键词：蓝牙耳机 | 采集时间：刚刚</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">商品总数</div>
+                <div class="stat-value">24</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">平均价格</div>
+                <div class="stat-value">¥446.34</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">价格区间</div>
+                <div class="stat-value">155.55 - 807.21</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">覆盖平台</div>
+                <div class="stat-value">TB, PDD, JD</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">价格分布</div>
+                <div id="priceDistChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">平台对比</div>
+                <div id="platformChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">性价比分析</div>
+                <div id="scatterChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">价格排行（低到高）</div>
+                <div id="rankChart" class="chart"></div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="chart-title">商品对比矩阵</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>商品名称</th>
+                        <th>平台</th>
+                        <th>价格</th>
+                        <th>原价</th>
+                        <th>销量</th>
+                        <th>评分</th>
+                        <th>性价比</th>
+                        <th>标签</th>
+                    </tr>
+                </thead>
+                <tbody id="productTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const chartData = {
+  "summary": {
+    "total_products": 24,
+    "platforms": [
+      "tb",
+      "pdd",
+      "jd"
+    ],
+    "avg_price": 446.34,
+    "price_range": "155.55 - 807.21"
+  },
+  "price_distribution": [
+    {
+      "range": "156.0-221.0",
+      "count": 4,
+      "min": 155.55,
+      "max": 220.72
+    },
+    {
+      "range": "221.0-286.0",
+      "count": 1,
+      "min": 220.72,
+      "max": 285.88
+    },
+    {
+      "range": "286.0-351.0",
+      "count": 3,
+      "min": 285.88,
+      "max": 351.05
+    },
+    {
+      "range": "351.0-416.0",
+      "count": 5,
+      "min": 351.05,
+      "max": 416.21
+    },
+    {
+      "range": "416.0-481.0",
+      "count": 2,
+      "min": 416.21,
+      "max": 481.38
+    },
+    {
+      "range": "481.0-547.0",
+      "count": 1,
+      "min": 481.38,
+      "max": 546.55
+    },
+    {
+      "range": "547.0-612.0",
+      "count": 3,
+      "min": 546.55,
+      "max": 611.71
+    },
+    {
+      "range": "612.0-677.0",
+      "count": 2,
+      "min": 611.71,
+      "max": 676.88
+    },
+    {
+      "range": "677.0-742.0",
+      "count": 1,
+      "min": 676.88,
+      "max": 742.04
+    },
+    {
+      "range": "742.0-807.0",
+      "count": 2,
+      "min": 742.04,
+      "max": 807.21
+    }
+  ],
+  "platform_comparison": [
+    {
+      "platform": "TB",
+      "avg_price": 415.05,
+      "avg_sales": 5862,
+      "avg_rating": 4.45,
+      "count": 8
+    },
+    {
+      "platform": "PDD",
+      "avg_price": 405.59,
+      "avg_sales": 11686,
+      "avg_rating": 4.24,
+      "count": 8
+    },
+    {
+      "platform": "JD",
+      "avg_price": 518.38,
+      "avg_sales": 4696,
+      "avg_rating": 4.71,
+      "count": 8
+    }
+  ],
+  "scatter_data": [
+    {
+      "name": "Beats 蓝牙耳机 SE13",
+      "price": 316.62,
+      "value_score": 67.97,
+      "sales": 8632,
+      "platform": "jd",
+      "rating": 4.8
+    },
+    {
+      "name": "Bose 蓝牙耳机 Pro2",
+      "price": 160.95,
+      "value_score": 67.34,
+      "sales": 27435,
+      "platform": "pdd",
+      "rating": 4.1
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 SE8",
+      "price": 211.06,
+      "value_score": 67.11,
+      "sales": 8021,
+      "platform": "jd",
+      "rating": 4.5
+    },
+    {
+      "name": "Sony 无线蓝牙耳机 Pro15",
+      "price": 397.88,
+      "value_score": 66.88,
+      "sales": 4284,
+      "platform": "jd",
+      "rating": 4.9
+    },
+    {
+      "name": "JBL 无线蓝牙耳机 X3",
+      "price": 374.92,
+      "value_score": 66.27,
+      "sales": 5656,
+      "platform": "tb",
+      "rating": 4.7
+    },
+    {
+      "name": "Bose 蓝牙耳机 Plus3",
+      "price": 304.68,
+      "value_score": 65.91,
+      "sales": 10102,
+      "platform": "tb",
+      "rating": 4.4
+    },
+    {
+      "name": "小米 蓝牙耳机 Max3",
+      "price": 652.65,
+      "value_score": 65.9,
+      "sales": 7662,
+      "platform": "jd",
+      "rating": 4.8
+    },
+    {
+      "name": "蓝牙耳机 Beats 运动耳机 Plus16",
+      "price": 243.46,
+      "value_score": 65.89,
+      "sales": 6852,
+      "platform": "pdd",
+      "rating": 4.4
+    },
+    {
+      "name": "蓝牙耳机 华为 运动耳机 Ultra7",
+      "price": 155.55,
+      "value_score": 65.69,
+      "sales": 2863,
+      "platform": "tb",
+      "rating": 4.4
+    },
+    {
+      "name": "Beats 无线蓝牙耳机 Plus11",
+      "price": 584.37,
+      "value_score": 64.61,
+      "sales": 1906,
+      "platform": "jd",
+      "rating": 4.9
+    },
+    {
+      "name": "Bose 蓝牙耳机 Max11",
+      "price": 686.65,
+      "value_score": 64.58,
+      "sales": 16641,
+      "platform": "pdd",
+      "rating": 4.4
+    },
+    {
+      "name": "Bose 蓝牙耳机 Ultra17",
+      "price": 579.64,
+      "value_score": 64.5,
+      "sales": 11935,
+      "platform": "tb",
+      "rating": 4.4
+    },
+    {
+      "name": "蓝牙耳机 华为 运动耳机 X5",
+      "price": 449.28,
+      "value_score": 63.97,
+      "sales": 11991,
+      "platform": "pdd",
+      "rating": 4.2
+    },
+    {
+      "name": "华为 蓝牙耳机 Ultra9",
+      "price": 763.78,
+      "value_score": 63.92,
+      "sales": 2810,
+      "platform": "jd",
+      "rating": 4.8
+    },
+    {
+      "name": "蓝牙耳机 Beats 降噪耳机 Max14",
+      "price": 469.2,
+      "value_score": 63.91,
+      "sales": 1828,
+      "platform": "tb",
+      "rating": 4.7
+    },
+    {
+      "name": "Beats 蓝牙耳机 SE14",
+      "price": 404.25,
+      "value_score": 63.83,
+      "sales": 19812,
+      "platform": "pdd",
+      "rating": 4.0
+    },
+    {
+      "name": "Beats 无线蓝牙耳机 Pro15",
+      "price": 180.68,
+      "value_score": 63.75,
+      "sales": 1552,
+      "platform": "tb",
+      "rating": 4.3
+    },
+    {
+      "name": "小米 无线蓝牙耳机 Max8",
+      "price": 655.82,
+      "value_score": 63.38,
+      "sales": 10534,
+      "platform": "tb",
+      "rating": 4.3
+    },
+    {
+      "name": "JBL 蓝牙耳机 Plus7",
+      "price": 545.91,
+      "value_score": 63.22,
+      "sales": 7020,
+      "platform": "pdd",
+      "rating": 4.3
+    },
+    {
+      "name": "Beats 蓝牙耳机 Max5",
+      "price": 807.21,
+      "value_score": 62.89,
+      "sales": 3446,
+      "platform": "jd",
+      "rating": 4.6
+    },
+    {
+      "name": "小米 无线蓝牙耳机 Plus13",
+      "price": 350.03,
+      "value_score": 62.16,
+      "sales": 1152,
+      "platform": "pdd",
+      "rating": 4.4
+    },
+    {
+      "name": "AirPods 无线蓝牙耳机 Ultra9",
+      "price": 599.88,
+      "value_score": 61.92,
+      "sales": 2428,
+      "platform": "tb",
+      "rating": 4.4
+    },
+    {
+      "name": "Sony 蓝牙耳机 SE16",
+      "price": 404.22,
+      "value_score": 61.25,
+      "sales": 2592,
+      "platform": "pdd",
+      "rating": 4.1
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 Ultra10",
+      "price": 413.51,
+      "value_score": 61.17,
+      "sales": 809,
+      "platform": "jd",
+      "rating": 4.4
+    }
+  ],
+  "price_rank": [
+    {
+      "name": "蓝牙耳机 华为 运动耳机 Ultra7",
+      "price": 155.55,
+      "platform": "tb"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Pro2",
+      "price": 160.95,
+      "platform": "pdd"
+    },
+    {
+      "name": "Beats 无线蓝牙耳机 Pro15",
+      "price": 180.68,
+      "platform": "tb"
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 SE8",
+      "price": 211.06,
+      "platform": "jd"
+    },
+    {
+      "name": "蓝牙耳机 Beats 运动耳机 Plus16",
+      "price": 243.46,
+      "platform": "pdd"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Plus3",
+      "price": 304.68,
+      "platform": "tb"
+    },
+    {
+      "name": "Beats 蓝牙耳机 SE13",
+      "price": 316.62,
+      "platform": "jd"
+    },
+    {
+      "name": "小米 无线蓝牙耳机 Plus13",
+      "price": 350.03,
+      "platform": "pdd"
+    },
+    {
+      "name": "JBL 无线蓝牙耳机 X3",
+      "price": 374.92,
+      "platform": "tb"
+    },
+    {
+      "name": "Sony 无线蓝牙耳机 Pro15",
+      "price": 397.88,
+      "platform": "jd"
+    },
+    {
+      "name": "Sony 蓝牙耳机 SE16",
+      "price": 404.22,
+      "platform": "pdd"
+    },
+    {
+      "name": "Beats 蓝牙耳机 SE14",
+      "price": 404.25,
+      "platform": "pdd"
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 Ultra10",
+      "price": 413.51,
+      "platform": "jd"
+    },
+    {
+      "name": "蓝牙耳机 华为 运动耳机 X5",
+      "price": 449.28,
+      "platform": "pdd"
+    },
+    {
+      "name": "蓝牙耳机 Beats 降噪耳机 Max14",
+      "price": 469.2,
+      "platform": "tb"
+    }
+  ],
+  "top_value": [
+    {
+      "name": "Beats 蓝牙耳机 SE13",
+      "platform": "jd",
+      "price": 316.62,
+      "value_score": 67.97,
+      "tags": [
+        "热销",
+        "高评分",
+        "大优惠"
+      ]
+    },
+    {
+      "name": "Bose 蓝牙耳机 Pro2",
+      "platform": "pdd",
+      "price": 160.95,
+      "value_score": 67.34,
+      "tags": [
+        "热销"
+      ]
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 SE8",
+      "platform": "jd",
+      "price": 211.06,
+      "value_score": 67.11,
+      "tags": [
+        "热销",
+        "大优惠"
+      ]
+    },
+    {
+      "name": "Sony 无线蓝牙耳机 Pro15",
+      "platform": "jd",
+      "price": 397.88,
+      "value_score": 66.88,
+      "tags": [
+        "高评分",
+        "大优惠"
+      ]
+    },
+    {
+      "name": "JBL 无线蓝牙耳机 X3",
+      "platform": "tb",
+      "price": 374.92,
+      "value_score": 66.27,
+      "tags": [
+        "热销",
+        "大优惠"
+      ]
+    }
+  ],
+  "platform_cheapest": {
+    "tb": {
+      "name": "蓝牙耳机 华为 运动耳机 Ultra7",
+      "price": 155.55,
+      "url": "https://item.taobao.com/item/4f0d414a9488"
+    },
+    "pdd": {
+      "name": "Bose 蓝牙耳机 Pro2",
+      "price": 160.95,
+      "url": "https://mobile.yangkeduo.com/item/e4ac78099817"
+    },
+    "jd": {
+      "name": "Bose 无线蓝牙耳机 SE8",
+      "price": 211.06,
+      "url": "https://item.jd.com/item/355c9c630aa3"
+    }
+  },
+  "comparison_matrix": [
+    {
+      "name": "Beats 蓝牙耳机 SE13",
+      "platform": "jd",
+      "price": 316.62,
+      "original_price": 441.25,
+      "sales": 8632,
+      "shop_rating": 4.8,
+      "shop_name": "Beats优选数码",
+      "value_score": 67.97,
+      "tags": [
+        "热销",
+        "高评分",
+        "大优惠"
+      ],
+      "discount": "28.0%",
+      "url": "https://item.jd.com/item/9443ca5a06ff"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Pro2",
+      "platform": "pdd",
+      "price": 160.95,
+      "original_price": 178.95,
+      "sales": 27435,
+      "shop_rating": 4.1,
+      "shop_name": "Bose正品保障店",
+      "value_score": 67.34,
+      "tags": [
+        "热销"
+      ],
+      "discount": "10.0%",
+      "url": "https://mobile.yangkeduo.com/item/e4ac78099817"
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 SE8",
+      "platform": "jd",
+      "price": 211.06,
+      "original_price": 283.39,
+      "sales": 8021,
+      "shop_rating": 4.5,
+      "shop_name": "Bose旗舰体验店",
+      "value_score": 67.11,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "26.0%",
+      "url": "https://item.jd.com/item/355c9c630aa3"
+    },
+    {
+      "name": "Sony 无线蓝牙耳机 Pro15",
+      "platform": "jd",
+      "price": 397.88,
+      "original_price": 570.91,
+      "sales": 4284,
+      "shop_rating": 4.9,
+      "shop_name": "Sony数码专营店",
+      "value_score": 66.88,
+      "tags": [
+        "高评分",
+        "大优惠"
+      ],
+      "discount": "30.0%",
+      "url": "https://item.jd.com/item/a854177a739f"
+    },
+    {
+      "name": "JBL 无线蓝牙耳机 X3",
+      "platform": "tb",
+      "price": 374.92,
+      "original_price": 532.03,
+      "sales": 5656,
+      "shop_rating": 4.7,
+      "shop_name": "JBL电子产品商城",
+      "value_score": 66.27,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "30.0%",
+      "url": "https://item.taobao.com/item/8615669d64d0"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Plus3",
+      "platform": "tb",
+      "price": 304.68,
+      "original_price": 440.07,
+      "sales": 10102,
+      "shop_rating": 4.4,
+      "shop_name": "Bose优选数码",
+      "value_score": 65.91,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "31.0%",
+      "url": "https://item.taobao.com/item/a6bae3cd2b38"
+    },
+    {
+      "name": "小米 蓝牙耳机 Max3",
+      "platform": "jd",
+      "price": 652.65,
+      "original_price": 758.21,
+      "sales": 7662,
+      "shop_rating": 4.8,
+      "shop_name": "小米优选数码",
+      "value_score": 65.9,
+      "tags": [
+        "热销",
+        "高评分"
+      ],
+      "discount": "14.0%",
+      "url": "https://item.jd.com/item/080fce729b63"
+    },
+    {
+      "name": "蓝牙耳机 Beats 运动耳机 Plus16",
+      "platform": "pdd",
+      "price": 243.46,
+      "original_price": 324.59,
+      "sales": 6852,
+      "shop_rating": 4.4,
+      "shop_name": "蓝牙耳机数码专营店",
+      "value_score": 65.89,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "25.0%",
+      "url": "https://mobile.yangkeduo.com/item/19c3dd696930"
+    },
+    {
+      "name": "蓝牙耳机 华为 运动耳机 Ultra7",
+      "platform": "tb",
+      "price": 155.55,
+      "original_price": 205.36,
+      "sales": 2863,
+      "shop_rating": 4.4,
+      "shop_name": "蓝牙耳机正品保障店",
+      "value_score": 65.69,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "24.0%",
+      "url": "https://item.taobao.com/item/4f0d414a9488"
+    },
+    {
+      "name": "Beats 无线蓝牙耳机 Plus11",
+      "platform": "jd",
+      "price": 584.37,
+      "original_price": 795.43,
+      "sales": 1906,
+      "shop_rating": 4.9,
+      "shop_name": "Beats优选数码",
+      "value_score": 64.61,
+      "tags": [
+        "高评分",
+        "大优惠"
+      ],
+      "discount": "27.0%",
+      "url": "https://item.jd.com/item/58bb323c9972"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Max11",
+      "platform": "pdd",
+      "price": 686.65,
+      "original_price": 868.73,
+      "sales": 16641,
+      "shop_rating": 4.4,
+      "shop_name": "Bose品牌直营店",
+      "value_score": 64.58,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "21.0%",
+      "url": "https://mobile.yangkeduo.com/item/70dbe619f804"
+    },
+    {
+      "name": "Bose 蓝牙耳机 Ultra17",
+      "platform": "tb",
+      "price": 579.64,
+      "original_price": 789.16,
+      "sales": 11935,
+      "shop_rating": 4.4,
+      "shop_name": "Bose科技生活馆",
+      "value_score": 64.5,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "27.0%",
+      "url": "https://item.taobao.com/item/23e718030d4b"
+    },
+    {
+      "name": "蓝牙耳机 华为 运动耳机 X5",
+      "platform": "pdd",
+      "price": 449.28,
+      "original_price": 515.09,
+      "sales": 11991,
+      "shop_rating": 4.2,
+      "shop_name": "蓝牙耳机科技生活馆",
+      "value_score": 63.97,
+      "tags": [
+        "热销"
+      ],
+      "discount": "13.0%",
+      "url": "https://mobile.yangkeduo.com/item/7a3e8843c911"
+    },
+    {
+      "name": "华为 蓝牙耳机 Ultra9",
+      "platform": "jd",
+      "price": 763.78,
+      "original_price": 1104.62,
+      "sales": 2810,
+      "shop_rating": 4.8,
+      "shop_name": "华为科技生活馆",
+      "value_score": 63.92,
+      "tags": [
+        "高评分",
+        "大优惠"
+      ],
+      "discount": "31.0%",
+      "url": "https://item.jd.com/item/0be496c2847e"
+    },
+    {
+      "name": "蓝牙耳机 Beats 降噪耳机 Max14",
+      "platform": "tb",
+      "price": 469.2,
+      "original_price": 688.07,
+      "sales": 1828,
+      "shop_rating": 4.7,
+      "shop_name": "蓝牙耳机优选数码",
+      "value_score": 63.91,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "32.0%",
+      "url": "https://item.taobao.com/item/f41d9784cd45"
+    },
+    {
+      "name": "Beats 蓝牙耳机 SE14",
+      "platform": "pdd",
+      "price": 404.25,
+      "original_price": 561.73,
+      "sales": 19812,
+      "shop_rating": 4.0,
+      "shop_name": "Beats品牌直营店",
+      "value_score": 63.83,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "28.0%",
+      "url": "https://mobile.yangkeduo.com/item/01e6fb121d97"
+    },
+    {
+      "name": "Beats 无线蓝牙耳机 Pro15",
+      "platform": "tb",
+      "price": 180.68,
+      "original_price": 262.13,
+      "sales": 1552,
+      "shop_rating": 4.3,
+      "shop_name": "Beats旗舰体验店",
+      "value_score": 63.75,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "31.0%",
+      "url": "https://item.taobao.com/item/e801a72de2c0"
+    },
+    {
+      "name": "小米 无线蓝牙耳机 Max8",
+      "platform": "tb",
+      "price": 655.82,
+      "original_price": 951.76,
+      "sales": 10534,
+      "shop_rating": 4.3,
+      "shop_name": "小米数码专营店",
+      "value_score": 63.38,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "31.0%",
+      "url": "https://item.taobao.com/item/8e79690585d1"
+    },
+    {
+      "name": "JBL 蓝牙耳机 Plus7",
+      "platform": "pdd",
+      "price": 545.91,
+      "original_price": 750.06,
+      "sales": 7020,
+      "shop_rating": 4.3,
+      "shop_name": "JBL科技生活馆",
+      "value_score": 63.22,
+      "tags": [
+        "热销",
+        "大优惠"
+      ],
+      "discount": "27.0%",
+      "url": "https://mobile.yangkeduo.com/item/759477196a8e"
+    },
+    {
+      "name": "Beats 蓝牙耳机 Max5",
+      "platform": "jd",
+      "price": 807.21,
+      "original_price": 1179.14,
+      "sales": 3446,
+      "shop_rating": 4.6,
+      "shop_name": "Beats正品保障店",
+      "value_score": 62.89,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "32.0%",
+      "url": "https://item.jd.com/item/2079707d7561"
+    },
+    {
+      "name": "小米 无线蓝牙耳机 Plus13",
+      "platform": "pdd",
+      "price": 350.03,
+      "original_price": 441.41,
+      "sales": 1152,
+      "shop_rating": 4.4,
+      "shop_name": "小米官方旗舰店",
+      "value_score": 62.16,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "21.0%",
+      "url": "https://mobile.yangkeduo.com/item/d298fd00869f"
+    },
+    {
+      "name": "AirPods 无线蓝牙耳机 Ultra9",
+      "platform": "tb",
+      "price": 599.88,
+      "original_price": 888.15,
+      "sales": 2428,
+      "shop_rating": 4.4,
+      "shop_name": "AirPods科技生活馆",
+      "value_score": 61.92,
+      "tags": [
+        "大优惠"
+      ],
+      "discount": "32.0%",
+      "url": "https://item.taobao.com/item/e6a0b951879f"
+    },
+    {
+      "name": "Sony 蓝牙耳机 SE16",
+      "platform": "pdd",
+      "price": 404.22,
+      "original_price": 505.15,
+      "sales": 2592,
+      "shop_rating": 4.1,
+      "shop_name": "Sony科技生活馆",
+      "value_score": 61.25,
+      "tags": [],
+      "discount": "20.0%",
+      "url": "https://mobile.yangkeduo.com/item/d840728b9fd9"
+    },
+    {
+      "name": "Bose 无线蓝牙耳机 Ultra10",
+      "platform": "jd",
+      "price": 413.51,
+      "original_price": 485.9,
+      "sales": 809,
+      "shop_rating": 4.4,
+      "shop_name": "Bose电子产品商城",
+      "value_score": 61.17,
+      "tags": [],
+      "discount": "15.0%",
+      "url": "https://item.jd.com/item/532b8820ecc6"
+    }
+  ]
+};
+
+        // 价格分布图
+        const priceDistChart = echarts.init(document.getElementById('priceDistChart'));
+        priceDistChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: {
+                type: 'category',
+                data: chartData.price_distribution.map(d => d.range),
+                axisLabel: { color: '#999', rotate: 30 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: { color: '#999' }
+            },
+            series: [{
+                data: chartData.price_distribution.map(d => d.count),
+                type: 'bar',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#764ba2' }
+                    ])
+                }
+            }]
+        });
+
+        // 平台对比图
+        const platformChart = echarts.init(document.getElementById('platformChart'));
+        platformChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['平均价格', '平均销量/100', '平均评分*10'], textStyle: { color: '#999' } },
+            radar: {
+                indicator: chartData.platform_comparison.map(p => ({
+                    name: p.platform,
+                    max: Math.max(...chartData.platform_comparison.map(x => x.avg_price)) * 1.2
+                }))
+            },
+            series: [{
+                type: 'radar',
+                data: [
+                    {
+                        value: chartData.platform_comparison.map(p => p.avg_price),
+                        name: '平均价格',
+                        areaStyle: { opacity: 0.3 }
+                    }
+                ]
+            }]
+        });
+
+        // 性价比散点图
+        const scatterChart = echarts.init(document.getElementById('scatterChart'));
+        scatterChart.setOption({
+            tooltip: {
+                formatter: function(params) {
+                    return params.data[3] + '<br/>价格: ¥' + params.data[0] + '<br/>性价比: ' + params.data[1];
+                }
+            },
+            xAxis: {
+                type: 'value',
+                name: '价格',
+                axisLabel: { color: '#999' },
+                nameTextStyle: { color: '#999' }
+            },
+            yAxis: {
+                type: 'value',
+                name: '性价比得分',
+                axisLabel: { color: '#999' },
+                nameTextStyle: { color: '#999' }
+            },
+            series: [{
+                type: 'scatter',
+                data: chartData.scatter_data.map(d => [d.price, d.value_score, d.sales, d.name]),
+                symbolSize: function(data) { return Math.sqrt(data[2]) / 5; },
+                itemStyle: {
+                    color: new echarts.graphic.RadialGradient(0.4, 0.3, 1, [
+                        { offset: 0, color: '#667eea' },
+                        { offset: 1, color: '#764ba2' }
+                    ])
+                }
+            }]
+        });
+
+        // 价格排行图
+        const rankChart = echarts.init(document.getElementById('rankChart'));
+        rankChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: {
+                type: 'value',
+                axisLabel: { color: '#999' }
+            },
+            yAxis: {
+                type: 'category',
+                data: chartData.price_rank.map(d => d.name).reverse(),
+                axisLabel: { color: '#999', fontSize: 10 }
+            },
+            series: [{
+                type: 'bar',
+                data: chartData.price_rank.map(d => d.price).reverse(),
+                itemStyle: {
+                    color: function(params) {
+                        const colors = ['#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107'];
+                        return colors[Math.min(params.dataIndex, colors.length - 1)];
+                    }
+                }
+            }]
+        });
+
+        // 填充表格
+        const tbody = document.getElementById('productTable');
+        chartData.comparison_matrix.forEach((item, index) => {
+            const row = document.createElement('tr');
+            const platformClass = 'platform-' + item.platform;
+            const tagsHtml = item.tags.map(tag => {
+                const tagClass = tag === '高性价比' ? 'tag-value' :
+                                tag === '热销' ? 'tag-hot' :
+                                tag === '高评分' ? 'tag-rating' : 'tag-discount';
+                return `<span class="tag ${tagClass}">${tag}</span>`;
+            }).join('');
+
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.name}</td>
+                <td class="${platformClass}">${item.platform.toUpperCase()}</td>
+                <td>¥${item.price}</td>
+                <td style="text-decoration: line-through; opacity: 0.6;">¥${item.original_price}</td>
+                <td>${item.sales}</td>
+                <td>${item.shop_rating}</td>
+                <td>${item.value_score}</td>
+                <td>${tagsHtml}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        window.addEventListener('resize', () => {
+            priceDistChart.resize();
+            platformChart.resize();
+            scatterChart.resize();
+            rankChart.resize();
+        });
+    </script>
+</body>
+</html>
